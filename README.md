@@ -33,7 +33,7 @@ Before you begin, ensure you have the following installed:
 1. **Clone the repository**
    ```bash
    git clone <your-repo-url>
-   cd web_stock
+   cd StockTracker_demo
    ```
 
 2. **Install dependencies**
@@ -60,7 +60,7 @@ Before you begin, ensure you have the following installed:
 ## 📁 Project Structure
 
 ```
-web_stock/
+StockTracker_demo/
 ├── src/
 │   ├── frontend/
 │   │   ├── components/       # Reusable components
