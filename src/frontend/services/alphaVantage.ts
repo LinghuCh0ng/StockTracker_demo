@@ -1,62 +1,14 @@
+import type { 
+    AlphaVantageQuoteResponse, 
+    StockQuote, 
+    AlphaVantageSearchResponse, 
+    StockSearchResult,
+    CurrencyRate,
+    AlphaVantageCurrencyResponse,
+} from "./interface";
+
 const API_KEY = import.meta.env.VITE_ALPHA_VANTAGE_API_KEY;
 const BASE_URL = 'https://www.alphavantage.co/query';
-
-export interface StockQuote {
-    symbol: string;
-    open: string;
-    high: string;
-    low: string;
-    price: string;
-    volume: string;
-    latestTradingDay: string;
-    previousClose: string;
-    change: string;
-    changePercent: string;
-}
-
-export interface StockSearchResult {
-    symbol: string;
-    name: string;
-    type: string;
-    region: string;
-    marketOpen: string;
-    marketClose: string;
-    timezone: string;
-    currency: string;
-    matchScore: string;
-}
-interface AlphaVantageSearchResponse {
-    bestMatches?: Array<{
-        '1. symbol': string;
-        '2. name': string;
-        '3. type': string;
-        '4. region': string;
-        '5. marketOpen': string;
-        '6. marketClose': string;
-        '7. timezone': string;
-        '8. currency': string;
-        '9. matchScore': string;
-    }>;
-    'Note'?: string;
-    'Error Message'?: string;
-}
-
-interface AlphaVantageQuoteResponse {
-    'Global Quote'?: {
-        '01. symbol': string;
-        '02. open': string;
-        '03. high': string;
-        '04. low': string;
-        '05. price': string;
-        '06. volume': string;
-        '07. latest trading day': string;
-        '08. previous close': string;
-        '09. change': string;
-        '10. change percent': string;
-    };
-    'Note'?: string;
-    'Error Message'?: string;
-}
 
 export async function getStockQuote(symbol: string): Promise<StockQuote> {
     // Function body
@@ -134,4 +86,40 @@ export async function searchStocks(keywords: string): Promise<StockSearchResult[
     });
 
     return result;
+}
+
+/**
+ * Get currency exchange rate
+ * @param fromCurrency Base currency code, e.g., 'USD'
+ * @param toCurrency Target currency code, e.g., 'CNY'
+ * @returns Promise with currency rate data
+ */
+export async function getCurrencyRate(fromCurrency: string, toCurrency: string): Promise<CurrencyRate> {
+    if (!API_KEY) throw new Error('Alpha Vantage API key is not configured...');
+    
+    const url = `${BASE_URL}?function=CURRENCY_EXCHANGE_RATE&from_currency=${fromCurrency}&to_currency=${toCurrency}&apikey=${API_KEY}`;
+    
+    const response = await fetch(url);
+
+    if(!response.ok) throw new Error(`API request failed: ${response.status}`);
+
+    const data: AlphaVantageCurrencyResponse = await response.json();
+
+    if(data['Note']) throw new Error('API call frequency limit exceeded...');
+
+    if(data['Error Message']) throw new Error(data['Error Message']);
+
+    if(!data['Realtime Currency Exchange Rate']) throw new Error(`Currency rate not found for ${fromCurrency}/${toCurrency}`);
+
+    const result = data['Realtime Currency Exchange Rate'];
+
+    return {
+        fromCurrency: result['1. From_Currency Code'],
+        toCurrency: result['3. To_Currency Code'],
+        exchangeRate: result['5. Exchange Rate'],
+        bidPrice: result['8. Bid Price'],
+        askPrice: result['9. Ask Price'],
+        lastRefreshed: result['6. Last Refreshed'],
+        timeZone: result['7. Time Zone'],
+    }
 }

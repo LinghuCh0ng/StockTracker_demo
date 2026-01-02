@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { getStockQuote, searchStocks } from "../services/alphaVantage"
-import type { StockQuote, StockSearchResult } from "../services/alphaVantage"
+import type { StockQuote, StockSearchResult } from "../services/interface"
 
 export default function Stock() {
     const [ symbol, setSymbol ] = useState('')
@@ -113,7 +113,7 @@ export default function Stock() {
                         onBlur={() => {
                             setTimeout(() => setShowSuggestions(false), 200)
                         }}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left"
                     />
                     {/* ropdown*/}
                     {showSuggestions && searchSuggestions.length > 0 && (
