@@ -1,9 +1,12 @@
 # Stock Tracker
 
-A modern web application for tracking stock prices and market data using real-time API integration. Built with React, TypeScript, and Tailwind CSS.
+A modern full-stack web application for tracking stock prices, currency exchange rates, and commodity prices using real-time API integration. Built with React, TypeScript, Node.js, Express, and MySQL.
 
 ## 🚀 Features
 
+### Frontend
+- **Market Overview**: Real-time display of major currency pairs (USD/CNY, EUR/USD, GBP/USD, USD/JPY)
+- **Commodity Prices**: Auto-scrolling display of popular commodity prices (Gold, Silver, Oil, etc.)
 - **Stock Search with Autocomplete**: Intelligent search with debounced suggestions as you type
 - **Real-time Stock Quotes**: Get up-to-date stock prices, changes, and market data
 - **Multi-page Navigation**: Clean routing with Home, Stock, and News pages
@@ -11,79 +14,204 @@ A modern web application for tracking stock prices and market data using real-ti
 - **Error Handling**: Comprehensive error handling for API calls and user input
 - **Loading States**: Smooth loading indicators for better UX
 
+### Backend
+- **RESTful API**: Express.js server with organized route structure
+- **Database Caching**: MySQL database for storing and caching market data
+- **Smart Data Fetching**: Automatic check for today's data, fetch from API only when needed
+- **Rate Limit Management**: Built-in delays to comply with API rate limits
+- **Data Persistence**: Daily data storage with automatic upsert logic
+
 ## 🛠️ Tech Stack
 
-- **Frontend Framework**: React 19.2.0
+### Frontend
+- **Framework**: React 19.2.0
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS 4.1.18
 - **Routing**: React Router DOM 7.11.0
 - **Build Tool**: Vite
-- **API**: Alpha Vantage API
+
+### Backend
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Database**: MySQL
+- **Database Client**: mysql2/promise
+- **Environment**: dotenv
+
+### External APIs
+- **Alpha Vantage API**: Stock quotes, currency exchange rates, and market data
 
 ## 📋 Prerequisites
 
 Before you begin, ensure you have the following installed:
 
-- Node.js (v18 or higher)
-- npm or yarn
-- Alpha Vantage API key ([Get one here](https://www.alphavantage.co/support/#api-key))
+- **Node.js** (v18 or higher)
+- **npm** or **yarn**
+- **MySQL** (v8.0 or higher)
+- **Alpha Vantage API key** ([Get one here](https://www.alphavantage.co/support/#api-key))
 
 ## 🔧 Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd StockTracker_demo
-   ```
+### 1. Clone the repository
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+```bash
+git clone <your-repo-url>
+cd web_stock
+```
 
-3. **Set up environment variables**
-   
-   Create a `.env` file in the root directory:
-   ```env
-   VITE_ALPHA_VANTAGE_API_KEY=your_api_key_here
-   ```
-   
-   Replace `your_api_key_here` with your actual Alpha Vantage API key.
+### 2. Install dependencies
 
-4. **Start the development server**
-   ```bash
-   npm run dev
-   ```
+```bash
+npm install
+```
 
-   The application will be available at `http://localhost:5173`
+### 3. Set up MySQL database
+
+Create a MySQL database:
+
+```sql
+CREATE DATABASE stock_tracker;
+```
+
+Then create the required tables:
+
+```sql
+-- Currency rates table
+CREATE TABLE currency_rates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    from_currency VARCHAR(10) NOT NULL,
+    to_currency VARCHAR(10) NOT NULL,
+    exchange_rate VARCHAR(50) NOT NULL,
+    bid_price VARCHAR(50),
+    ask_price VARCHAR(50),
+    time_zone VARCHAR(50),
+    date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_currency_date (from_currency, to_currency, date)
+);
+
+-- Commodity prices table
+CREATE TABLE commodity_prices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    symbol VARCHAR(20) NOT NULL,
+    price VARCHAR(50) NOT NULL,
+    open_price VARCHAR(50),
+    high_price VARCHAR(50),
+    low_price VARCHAR(50),
+    previous_close VARCHAR(50),
+    change_amount VARCHAR(50),
+    change_percent VARCHAR(50),
+    volume VARCHAR(50),
+    latest_trading_day DATE,
+    date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_symbol_date (symbol, date)
+);
+```
+
+### 4. Set up environment variables
+
+Create a `.env` file in the root directory:
+
+```env
+# Alpha Vantage API
+VITE_ALPHA_VANTAGE_API_KEY=your_api_key_here
+
+# Database Configuration
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=stock_tracker
+
+# Server Configuration
+PORT=3001
+```
+
+Replace the placeholder values with your actual configuration:
+- `your_api_key_here`: Your Alpha Vantage API key
+- `your_mysql_password`: Your MySQL root password (or your database user password)
+
+### 5. Start the development servers
+
+#### Option 1: Run frontend and backend separately
+
+**Terminal 1 - Backend:**
+```bash
+npm run server
+```
+
+**Terminal 2 - Frontend:**
+```bash
+npm run dev
+```
+
+#### Option 2: Run both concurrently (if configured)
+
+```bash
+npm run dev:all
+```
+
+The application will be available at:
+- **Frontend**: `http://localhost:5173`
+- **Backend API**: `http://localhost:3001`
+- **Health Check**: `http://localhost:3001/health`
 
 ## 📁 Project Structure
 
 ```
-StockTracker_demo/
+web_stock/
 ├── src/
 │   ├── frontend/
-│   │   ├── components/       # Reusable components
-│   │   │   ├── Header.tsx    # Navigation header
-│   │   │   └── Layout.tsx    # Main layout wrapper
-│   │   ├── pages/            # Page components
-│   │   │   ├── Home.tsx      # Home page
-│   │   │   ├── Stock.tsx     # Stock search and display
-│   │   │   └── News.tsx      # News page
-│   │   ├── services/         # API services
-│   │   │   └── alphaVantage.ts # Alpha Vantage API integration
-│   │   ├── App.tsx           # Main app component with routes
-│   │   ├── main.tsx         # Application entry point
-│   │   └── index.css        # Global styles with Tailwind
-│   └── backend/              # Backend folder (for future use)
-├── public/                   # Static assets
-├── .env                      # Environment variables (not in git)
+│   │   ├── components/          # Reusable components
+│   │   │   ├── Header.tsx       # Navigation header
+│   │   │   └── Layout.tsx       # Main layout wrapper
+│   │   ├── pages/               # Page components
+│   │   │   ├── Home.tsx         # Home page with market overview
+│   │   │   ├── Stock.tsx        # Stock search and display
+│   │   │   └── News.tsx         # News page
+│   │   ├── services/            # API services
+│   │   ├── types/               # TypeScript interfaces
+│   │   │   └── interface.ts     # All type definitions
+│   │   ├── App.tsx              # Main app component with routes
+│   │   ├── main.tsx             # Application entry point
+│   │   └── index.css            # Global styles with Tailwind
+│   └── backend/
+│       ├── config/              # Configuration files
+│       │   └── database.ts      # MySQL connection pool
+│       ├── models/              # Database models
+│       │   ├── CurrencyRate.ts  # Currency rate model
+│       │   └── CommodityPrice.ts # Commodity price model
+│       ├── services/            # Business logic
+│       │   ├── alphaVantageService.ts # Alpha Vantage API calls
+│       │   └── dataService.ts   # Data fetching and caching logic
+│       ├── routes/              # API routes
+│       │   └── api.ts           # API endpoints
+│       └── server.ts            # Express server entry point
+├── public/                      # Static assets
+├── .env                        # Environment variables (not in git)
+├── .gitignore
 ├── package.json
+├── tsconfig.json
 ├── vite.config.ts
 └── README.md
 ```
 
 ## 🎯 Usage
+
+### Home Page - Market Overview
+
+The Home page displays:
+- **Major Currency Pairs**: Real-time exchange rates for USD/CNY, EUR/USD, GBP/USD, USD/JPY
+- **Popular Commodities**: Auto-scrolling display of commodity prices including:
+  - Gold (GLD)
+  - Silver (SLV)
+  - Crude Oil (USO)
+  - Copper (CPER)
+  - Corn (CORN)
+  - Wheat (WEAT)
+  - Soybean (SOYB)
+  - Cocoa (NIB)
 
 ### Stock Search
 
@@ -98,31 +226,57 @@ StockTracker_demo/
    - Previous close
    - Latest trading day
 
-### Navigation
+### API Endpoints
 
-- **Home**: Dashboard (coming soon)
-- **Stock**: Search and view stock information
-- **News**: Stock news (coming soon)
+The backend provides the following REST API endpoints:
+
+- `GET /api/currency-rates` - Get today's currency exchange rates
+- `GET /api/commodity-prices` - Get today's commodity prices
+- `GET /health` - Server health check
 
 ## 🔑 API Configuration
 
-This project uses the [Alpha Vantage API](https://www.alphavantage.co/) for stock data.
+This project uses the [Alpha Vantage API](https://www.alphavantage.co/) for market data.
 
 ### API Endpoints Used
 
+- `CURRENCY_EXCHANGE_RATE`: Real-time currency exchange rates
 - `GLOBAL_QUOTE`: Real-time stock quotes
 - `SYMBOL_SEARCH`: Stock symbol search and autocomplete
 
 ### Rate Limits
 
-The free tier of Alpha Vantage API has a limit of **5 API calls per minute**. The application includes debouncing to minimize API calls during search.
+The free tier of Alpha Vantage API has a limit of **5 API calls per minute**. The application includes:
+- Automatic delays between API calls (12 seconds)
+- Database caching to minimize API calls
+- On-demand fetching (only fetches if today's data doesn't exist)
 
 ## 📝 Available Scripts
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
+- `npm run dev` - Start frontend development server
+- `npm run server` - Start backend server (requires `tsx` or `ts-node`)
+- `npm run dev:all` - Run both frontend and backend concurrently (if configured)
+- `npm run build` - Build frontend for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+
+## 🗄️ Database Schema
+
+### Currency Rates Table
+
+Stores daily currency exchange rates with timezone information.
+
+### Commodity Prices Table
+
+Stores daily commodity prices with all price-related fields as strings for flexibility.
+
+### Data Caching Strategy
+
+- Data is fetched from Alpha Vantage API only once per day
+- When the Home page is opened, the backend checks if today's data exists
+- If data exists, it's returned from the database
+- If not, data is fetched from API, saved to database, and returned
+- Uses `ON DUPLICATE KEY UPDATE` to handle data updates
 
 ## 🚢 Deployment
 
@@ -136,33 +290,76 @@ This creates an optimized production build in the `dist` directory.
 
 ### Environment Variables in Production
 
-Make sure to set the `VITE_ALPHA_VANTAGE_API_KEY` environment variable in your deployment platform:
+Make sure to set all environment variables in your deployment platform:
 
+**Frontend (Vite):**
+- `VITE_ALPHA_VANTAGE_API_KEY` - Alpha Vantage API key
+
+**Backend:**
+- `DB_HOST` - MySQL host
+- `DB_USER` - MySQL username
+- `DB_PASSWORD` - MySQL password
+- `DB_NAME` - Database name
+- `PORT` - Server port (default: 3001)
+
+**Deployment Platforms:**
 - **Vercel**: Add in Project Settings → Environment Variables
 - **Netlify**: Add in Site Settings → Environment Variables
-- **GitHub Pages**: Use GitHub Secrets (if using GitHub Actions)
+- **Railway/Render**: Add in Environment Variables section
 
 ## 🔒 Security Notes
 
 - Never commit your `.env` file to version control
 - The `.env` file is already included in `.gitignore`
-- Keep your API key secure and don't share it publicly
+- Keep your API keys and database credentials secure
+- Use environment variables for all sensitive configuration
+- Consider using a secrets management service for production
 
 ## 🐛 Troubleshooting
+
+### MySQL Connection Issues
+
+If you see `ECONNREFUSED` errors:
+
+1. **Check MySQL service is running:**
+   ```bash
+   # Windows
+   net start MySQL80
+   
+   # Linux/Mac
+   sudo systemctl start mysql
+   # or
+   brew services start mysql
+   ```
+
+2. **Verify database credentials** in `.env` file
+
+3. **Test connection:**
+   ```bash
+   mysql -u root -p -h localhost
+   ```
 
 ### API Key Issues
 
 If you see "API key is not configured" error:
 1. Check that your `.env` file exists in the root directory
-2. Verify the variable name is exactly `VITE_ALPHA_VANTAGE_API_KEY`
+2. Verify the variable name is exactly `VITE_ALPHA_VANTAGE_API_KEY` for frontend
 3. Restart your development server after creating/updating `.env`
 
 ### Rate Limit Errors
 
 If you see "API call frequency limit exceeded":
 - The free tier allows 5 calls per minute
+- The backend includes automatic delays (12 seconds) between calls
 - Wait a minute before making more requests
 - Consider upgrading to a paid plan for higher limits
+
+### Database Date Errors
+
+If you see "Incorrect date value" errors:
+- Ensure the `date` column in database tables is of type `DATE`
+- Check that date values are in `YYYY-MM-DD` format
+- Verify parameter order in SQL INSERT statements
 
 ### Build Issues
 
@@ -175,13 +372,16 @@ Fix any linting errors before building.
 ## 📚 Learning Resources
 
 This project demonstrates:
-- React Hooks (useState, useRef, useEffect)
-- TypeScript interfaces and types
-- API integration and error handling
-- Debouncing for performance optimization
-- React Router for navigation
-- Tailwind CSS for styling
-- Environment variable management
+- **React Hooks**: useState, useRef, useEffect
+- **TypeScript**: Interfaces, types, type safety
+- **API Integration**: RESTful APIs, error handling
+- **Debouncing**: Performance optimization for search
+- **React Router**: Client-side routing and navigation
+- **Tailwind CSS**: Utility-first CSS framework
+- **Node.js/Express**: Backend server development
+- **MySQL**: Database design and queries
+- **Environment Variables**: Configuration management
+- **Database Caching**: Data persistence and optimization
 
 ## 🤝 Contributing
 
@@ -193,16 +393,21 @@ This project is open source and available for educational purposes.
 
 ## 🙏 Acknowledgments
 
-- [Alpha Vantage](https://www.alphavantage.co/) for providing the stock data API
+- [Alpha Vantage](https://www.alphavantage.co/) for providing the market data API
 - [Vite](https://vite.dev/) for the build tool
-- [React](https://react.dev/) for the framework
+- [React](https://react.dev/) for the frontend framework
 - [Tailwind CSS](https://tailwindcss.com/) for styling
+- [Express](https://expressjs.com/) for the backend framework
+- [MySQL](https://www.mysql.com/) for the database
 
 ---
 
 **Note**: This is a demo project. For production use, consider implementing additional features like:
-- User authentication
-- Watchlists
+- User authentication and authorization
+- Watchlists and favorites
 - Historical data charts
 - News integration
-- Backend API for data caching
+- Real-time WebSocket updates
+- Advanced error logging and monitoring
+- API rate limiting middleware
+- Database connection pooling optimization
