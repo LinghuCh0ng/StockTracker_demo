@@ -36,7 +36,9 @@ build/
 # Database
 *.sqlite
 *.db
-*.sql
+# Note: Keep database scripts in database/ folder, but ignore actual database files
+# SQL files in root are ignored, but database/ folder scripts are kept
+!/database/*.sql
 
 # OS files
 Thumbs.db

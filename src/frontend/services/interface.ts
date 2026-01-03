@@ -144,6 +144,102 @@ export interface AlphaVantageCurrencyResponse {
     'Error Message'?: string;
 }
 
+// ==================== MarketauxNews Response Interfaces ====================
+
+/**
+ * Entity highlight information
+ */
+export interface EntityHighlight {
+    highlight: string;
+    sentiment: number;
+    highlighted_in: string;
+}
+
+/**
+ * Entity information identified in news articles
+ */
+export interface NewsEntity {
+    symbol: string;
+    name: string;
+    exchange: string;
+    exchange_long: string;
+    country: string;
+    type: string;
+    industry: string;
+    match_score: number;
+    sentiment_score: number;
+    highlights: EntityHighlight[];
+}
+
+/**
+ * Similar news article reference
+ */
+export interface SimilarNews {
+    uuid: string;
+    title: string;
+    published_at: string;
+    source: string;
+}
+
+/**
+ * Individual news article from Marketaux API
+ */
+export interface MarketauxNewsArticle {
+    uuid: string;
+    title: string;
+    description: string;
+    snippet: string;
+    url: string;
+    image_url: string;
+    language: string;
+    published_at: string;
+    source: string;
+    categories?: string[];
+    entities?: NewsEntity[];
+    similar?: SimilarNews[];
+}
+
+/**
+ * Meta information for Marketaux API response
+ */
+export interface MarketauxNewsMeta {
+    found: number;
+    returned: number;
+    limit: number;
+    page: number;
+}
+
+/**
+ * Complete Marketaux API response structure
+ */
+export interface MarketauxNewsResponse {
+    meta?: MarketauxNewsMeta;
+    data?: MarketauxNewsArticle[];
+    error?: {
+        code: string;
+        message: string;
+    };
+}
+
+// ==================== News Related Interfaces ====================
+
+/**
+ * News article for frontend display
+ */
+export interface News {
+    uuid: string;
+    title: string;
+    description: string;
+    snippet: string;
+    url: string;
+    image_url: string;
+    language: string;
+    published_at: string;
+    source: string;
+    categories?: string[];
+    entities?: NewsEntity[];
+}
+
 // ==================== Common Interfaces ====================
 
 /**

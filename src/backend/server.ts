@@ -27,4 +27,7 @@ app.listen(PORT, () => {
     console.log(`API endpoints:`);
     console.log(`  - GET http://localhost:${PORT}/api/currency-rates`);
     console.log(`  - GET http://localhost:${PORT}/api/commodity-prices`);
+    console.log(`  - GET http://localhost:${PORT}/api/news`);
+    console.log(`  - GET http://localhost:${PORT}/api/news?headlines=true`);
+    console.log(`  - GET http://localhost:${PORT}/api/news?symbols=AAPL,TSLA&limit=20`);
 });

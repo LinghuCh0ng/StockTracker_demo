@@ -9,6 +9,11 @@ A modern full-stack web application for tracking stock prices, currency exchange
 - **Commodity Prices**: Auto-scrolling display of popular commodity prices (Gold, Silver, Oil, etc.)
 - **Stock Search with Autocomplete**: Intelligent search with debounced suggestions as you type
 - **Real-time Stock Quotes**: Get up-to-date stock prices, changes, and market data
+- **Financial News**: 
+  - Scrolling headline news ticker displaying today's important news
+  - News filtering by stock symbols, sentiment, and categories
+  - Entity recognition showing related stocks and sentiment scores
+  - Beautiful card-based news layout with images and metadata
 - **Multi-page Navigation**: Clean routing with Home, Stock, and News pages
 - **Responsive Design**: Beautiful UI built with Tailwind CSS
 - **Error Handling**: Comprehensive error handling for API calls and user input
@@ -16,8 +21,13 @@ A modern full-stack web application for tracking stock prices, currency exchange
 
 ### Backend
 - **RESTful API**: Express.js server with organized route structure
-- **Database Caching**: MySQL database for storing and caching market data
+- **Database Caching**: MySQL database for storing and caching market data and news
 - **Smart Data Fetching**: Automatic check for today's data, fetch from API only when needed
+- **News Management**: 
+  - Daily news caching with automatic updates
+  - Headline news identification based on sentiment and match scores
+  - Full news article storage with entities, categories, and highlights
+  - Transaction-based data persistence for data integrity
 - **Rate Limit Management**: Built-in delays to comply with API rate limits
 - **Data Persistence**: Daily data storage with automatic upsert logic
 
@@ -39,6 +49,7 @@ A modern full-stack web application for tracking stock prices, currency exchange
 
 ### External APIs
 - **Alpha Vantage API**: Stock quotes, currency exchange rates, and market data
+- **Marketaux API**: Financial and market news
 
 ## 📋 Prerequisites
 
@@ -48,6 +59,7 @@ Before you begin, ensure you have the following installed:
 - **npm** or **yarn**
 - **MySQL** (v8.0 or higher)
 - **Alpha Vantage API key** ([Get one here](https://www.alphavantage.co/support/#api-key))
+- **Marketaux API key** ([Get one here](https://www.marketaux.com/))
 
 ## 🔧 Installation
 
@@ -72,7 +84,7 @@ Create a MySQL database:
 CREATE DATABASE stock_tracker;
 ```
 
-Then create the required tables:
+Then create the required tables. Run the following SQL commands:
 
 ```sql
 -- Currency rates table
@@ -110,6 +122,16 @@ CREATE TABLE commodity_prices (
 );
 ```
 
+**For News tables**, you'll need to create the news-related tables. The schema includes:
+- `news_articles`: Main news articles table (uuid, title, description, snippet, url, image_url, language, published_at, source)
+- `news_categories`: News categories (news_uuid, category)
+- `news_entities`: Stock entities identified in articles (symbol, name, exchange, country, type, industry, match_score, sentiment_score)
+- `news_entity_highlights`: Entity highlight information (entity_id, highlight, sentiment, highlighted_in)
+- `news_similar`: Similar news articles (news_uuid, similar_uuid, similar_title, similar_published_at, similar_source)
+- `news_daily_cache`: Daily headline news cache (news_uuid, date, is_headline, priority)
+
+Refer to the `src/backend/models/News.ts` file for the complete table structure and relationships.
+
 ### 4. Set up environment variables
 
 Create a `.env` file in the root directory:
@@ -117,6 +139,9 @@ Create a `.env` file in the root directory:
 ```env
 # Alpha Vantage API
 VITE_ALPHA_VANTAGE_API_KEY=your_api_key_here
+
+# Marketaux API
+VITE_MARKETAUX_API_KEY=your_marketaux_api_key_here
 
 # Database Configuration
 DB_HOST=localhost
@@ -130,6 +155,7 @@ PORT=3001
 
 Replace the placeholder values with your actual configuration:
 - `your_api_key_here`: Your Alpha Vantage API key
+- `your_marketaux_api_key_here`: Your Marketaux API key ([Get one here](https://www.marketaux.com/))
 - `your_mysql_password`: Your MySQL root password (or your database user password)
 
 ### 5. Start the development servers
@@ -160,7 +186,7 @@ The application will be available at:
 ## 📁 Project Structure
 
 ```
-web_stock/
+StockTracker_demo/
 ├── src/
 │   ├── frontend/
 │   │   ├── components/          # Reusable components
@@ -169,10 +195,9 @@ web_stock/
 │   │   ├── pages/               # Page components
 │   │   │   ├── Home.tsx         # Home page with market overview
 │   │   │   ├── Stock.tsx        # Stock search and display
-│   │   │   └── News.tsx         # News page
+│   │   │   └── News.tsx         # News page with scrolling headlines
 │   │   ├── services/            # API services
-│   │   ├── types/               # TypeScript interfaces
-│   │   │   └── interface.ts     # All type definitions
+│   │   │   └── interface.ts     # TypeScript interfaces
 │   │   ├── App.tsx              # Main app component with routes
 │   │   ├── main.tsx             # Application entry point
 │   │   └── index.css            # Global styles with Tailwind
@@ -181,10 +206,13 @@ web_stock/
 │       │   └── database.ts      # MySQL connection pool
 │       ├── models/              # Database models
 │       │   ├── CurrencyRate.ts  # Currency rate model
-│       │   └── CommodityPrice.ts # Commodity price model
+│       │   ├── CommodityPrice.ts # Commodity price model
+│       │   └── News.ts          # News article model
 │       ├── services/            # Business logic
 │       │   ├── alphaVantageService.ts # Alpha Vantage API calls
-│       │   └── dataService.ts   # Data fetching and caching logic
+│       │   ├── marketauxService.ts # Marketaux API calls
+│       │   ├── dataService.ts   # Data fetching and caching logic
+│       │   └── newsService.ts   # News data fetching and caching logic
 │       ├── routes/              # API routes
 │       │   └── api.ts           # API endpoints
 │       └── server.ts            # Express server entry point
@@ -226,30 +254,77 @@ The Home page displays:
    - Previous close
    - Latest trading day
 
+### Financial News
+
+1. Navigate to the **News** page
+2. View the scrolling headline ticker at the top showing today's important news
+3. Use filters to customize your news feed:
+   - **Stock Symbols**: Filter news by specific stocks (e.g., "AAPL,TSLA")
+   - **Sentiment**: Filter by positive, negative, or neutral sentiment
+   - **Headlines Only**: Toggle to show only headline news
+4. Each news article displays:
+   - Title, description, and image
+   - Related stock entities with sentiment scores
+   - Categories and tags
+   - Source and publication time
+   - Direct link to the original article
+
 ### API Endpoints
 
 The backend provides the following REST API endpoints:
 
 - `GET /api/currency-rates` - Get today's currency exchange rates
 - `GET /api/commodity-prices` - Get today's commodity prices
+- `GET /api/news` - Get today's financial news
+  - Query parameters:
+    - `symbols`: Comma-separated stock symbols (e.g., "AAPL,TSLA")
+    - `limit`: Number of results (default: 50, max: 100)
+    - `page`: Page number for pagination
+    - `language`: Language code (default: "en")
+    - `sentiment_gte`: Minimum sentiment score (-1 to 1)
+    - `sentiment_lte`: Maximum sentiment score (-1 to 1)
+    - `countries`: Comma-separated country codes
+    - `entity_types`: Comma-separated entity types
+    - `industries`: Comma-separated industries
+    - `filter_entities`: Filter entities to match query (true/false)
+    - `must_have_entities`: Only return articles with entities (true/false)
+- `GET /api/news?headlines=true` - Get today's headline news
 - `GET /health` - Server health check
 
 ## 🔑 API Configuration
 
-This project uses the [Alpha Vantage API](https://www.alphavantage.co/) for market data.
+This project uses multiple APIs for market data and news.
 
-### API Endpoints Used
+### Alpha Vantage API
 
+Used for stock quotes, currency exchange rates, and market data.
+
+**API Endpoints Used:**
 - `CURRENCY_EXCHANGE_RATE`: Real-time currency exchange rates
 - `GLOBAL_QUOTE`: Real-time stock quotes
 - `SYMBOL_SEARCH`: Stock symbol search and autocomplete
 
-### Rate Limits
-
+**Rate Limits:**
 The free tier of Alpha Vantage API has a limit of **5 API calls per minute**. The application includes:
 - Automatic delays between API calls (12 seconds)
 - Database caching to minimize API calls
 - On-demand fetching (only fetches if today's data doesn't exist)
+
+### Marketaux API
+
+Used for financial and market news.
+
+**API Endpoints Used:**
+- `GET /v1/news/all`: Get financial and market news
+
+**Features:**
+- Supports filtering by stock symbols, sentiment, countries, industries, etc.
+- Automatic database caching (news is stored and retrieved from database)
+- Headline news identification based on sentiment and match scores
+- Daily news updates (fetches once per day, then serves from database)
+
+**Rate Limits:**
+Check [Marketaux documentation](https://www.marketaux.com/documentation) for current rate limits. The application includes database caching to minimize API calls.
 
 ## 📝 Available Scripts
 
@@ -270,13 +345,27 @@ Stores daily currency exchange rates with timezone information.
 
 Stores daily commodity prices with all price-related fields as strings for flexibility.
 
+### News Tables
+
+The news feature uses multiple related tables:
+- `news_articles`: Main news articles table
+- `news_categories`: News categories (many-to-many relationship)
+- `news_entities`: Stock entities identified in articles
+- `news_entity_highlights`: Entity highlight information
+- `news_similar`: Similar news articles
+- `news_daily_cache`: Daily headline news cache for quick retrieval
+
+Refer to the `src/backend/models/News.ts` file for the complete table structure, relationships, and field definitions.
+
 ### Data Caching Strategy
 
-- Data is fetched from Alpha Vantage API only once per day
-- When the Home page is opened, the backend checks if today's data exists
-- If data exists, it's returned from the database
+- **Market Data**: Fetched from Alpha Vantage API only once per day
+- **News Data**: Fetched from Marketaux API only once per day
+- When a page is opened, the backend checks if today's data exists in the database
+- If data exists, it's returned from the database (fast)
 - If not, data is fetched from API, saved to database, and returned
 - Uses `ON DUPLICATE KEY UPDATE` to handle data updates
+- News articles are stored with full relationships (entities, categories, highlights) using database transactions
 
 ## 🚢 Deployment
 
@@ -296,6 +385,8 @@ Make sure to set all environment variables in your deployment platform:
 - `VITE_ALPHA_VANTAGE_API_KEY` - Alpha Vantage API key
 
 **Backend:**
+- `VITE_ALPHA_VANTAGE_API_KEY` - Alpha Vantage API key
+- `VITE_MARKETAUX_API_KEY` - Marketaux API key
 - `DB_HOST` - MySQL host
 - `DB_USER` - MySQL username
 - `DB_PASSWORD` - MySQL password
@@ -356,9 +447,12 @@ If you see "API call frequency limit exceeded":
 
 ### Database Date Errors
 
-If you see "Incorrect date value" errors:
+If you see "Incorrect date value" or "Incorrect datetime value" errors:
 - Ensure the `date` column in database tables is of type `DATE`
-- Check that date values are in `YYYY-MM-DD` format
+- Ensure the `published_at` column in `news_articles` is of type `DATETIME`
+- The application automatically converts ISO 8601 format to MySQL DATETIME format
+- Check that date values are in `YYYY-MM-DD` format for DATE columns
+- Check that datetime values are in `YYYY-MM-DD HH:MM:SS` format for DATETIME columns
 - Verify parameter order in SQL INSERT statements
 
 ### Build Issues
@@ -402,11 +496,26 @@ This project is open source and available for educational purposes.
 
 ---
 
+## 📸 Features Showcase
+
+### News Page Features
+- **Scrolling Headline Ticker**: Auto-scrolling display of today's headline news with breaking news badges
+- **Advanced Filtering**: Filter by stock symbols, sentiment scores, and more
+- **Entity Recognition**: See which stocks are mentioned in each article with sentiment analysis
+- **Rich Metadata**: Categories, publication dates, sources, and direct article links
+- **Responsive Cards**: Beautiful card-based layout with images and hover effects
+
+### Data Management
+- **Automatic Daily Updates**: News and market data are automatically fetched and cached daily
+- **Smart Caching**: Database-first approach reduces API calls and improves performance
+- **Transaction Safety**: News articles are saved with full data integrity using database transactions
+
+---
+
 **Note**: This is a demo project. For production use, consider implementing additional features like:
 - User authentication and authorization
 - Watchlists and favorites
 - Historical data charts
-- News integration
 - Real-time WebSocket updates
 - Advanced error logging and monitoring
 - API rate limiting middleware
